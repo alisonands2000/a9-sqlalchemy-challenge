@@ -15,15 +15,15 @@ app = Flask(__name__)
 
 
 # Save references to each table
-engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+engine = create_engine("sqlite:///Starter_Code/Resources/hawaii.sqlite")
 Base = automap_base()
-# Base.prepare(autoload_with = engine)
+Base.prepare(autoload_with = engine)
 
-# measurement = Base.classes.measurement
-# station = Base.classes.station
+measurement = Base.classes.measurement
+station = Base.classes.station
 
-# # Create our session (link) from Python to the DB
-# session = Session(engine)
+# Create our session (link) from Python to the DB
+session = Session(engine)
 
 #################################################
 # Flask Setup
