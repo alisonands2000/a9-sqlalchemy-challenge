@@ -105,3 +105,5 @@ if __name__ == "__main__":
 
 
 # @app.route("/api/v1.0/<start>/<end>")
+    
+session.close()
