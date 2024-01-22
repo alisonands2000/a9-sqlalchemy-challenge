@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 
 # Save references to each table
-engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+engine = create_engine("sqlite:///Starter_Code/Resources/hawaii.sqlite")
 Base = automap_base()
 Base.prepare(autoload_with = engine)
 
@@ -27,6 +27,10 @@ station = Base.classes.station
 # Create our session (link) from Python to the DB
 session = Session(engine)
 
+#################################################
+# Flask Setup
+#################################################
+## PRECIPITATION 
 # last 12 months of data
 date = session.query(measurement.date).order_by(desc(measurement.date)).first()
 past_year = dt.datetime.strptime(date[0], '%Y-%m-%d') - dt.timedelta(365)
@@ -36,11 +40,26 @@ past_year_data = session.query(measurement.date, measurement.prcp).\
 
 prcp_dict = {d:p for d, p in past_year_data}
 
-#################################################
-# Flask Setup
-#################################################
+
+## STATION
+stations = session.query(station.station, station.name).all()
+stations_list = {id:loc for id, loc in stations}
 
 
+## TOBS
+# Using the most active station id
+# Query the last 12 months of temperature observation data for this station and plot the results as a histogram
+most_active_station = session.query(measurement.station, func.count(measurement.station)).group_by(measurement.station).order_by(desc(func.count(measurement.station))).first()
+most_active_station_latest_date = session.query(measurement.date).order_by(desc(measurement.date)).filter(measurement.station == most_active_station[0]).first()
+most_active_station_latest_date = dt.datetime.strptime(most_active_station_latest_date[0], '%Y-%m-%d')
+most_active_station_past_year = most_active_station_latest_date - dt.timedelta(365)
+most_active_station_past_year_data = session.query(measurement.date, measurement.tobs).\
+    filter(measurement.date >= most_active_station_past_year).\
+    filter(measurement.station == most_active_station[0]).all()
+prcp_df = pd.DataFrame(most_active_station_past_year_data, columns = ['date', 'temp'])
+prcp_df.values.tolist()
+prcp_df['date'] = pd.to_datetime(prcp_df['date'])
+tobs = {d:t for d, t in most_active_station_past_year_data}
 
 
 #################################################
@@ -63,21 +82,10 @@ def prcp():
 
 @app.route("/api/v1.0/stations")
 def stations():
-    stations = session.query(station.station, station.name).all()
-    stations_list = {id:loc for id, loc in stations}
     return stations_list
 
 @app.route("/api/v1.0/tobs")
 def most_active_station():
-    most_active_station = session.query(measurement.station, func.count(measurement.station)).group_by(measurement.station).order_by(desc(func.count(measurement.station))).first()
-    # most_active_station_id = most_active_station[0]
-    most_active_station_latest_date = session.query(measurement.date).order_by(desc(measurement.date)).first()
-    most_active_station_latest_date = dt.datetime.strptime(most_active_station_latest_date[0], '%Y-%m-%d')
-    # most_active_station_past_year = most_active_station_latest_date - dt.timedelta(365)
-    most_active_station_past_year_data = session.query(measurement.date, measurement.tobs).\
-        filter(measurement.date >= past_year).all()
-    # prcp_df = pd.DataFrame(most_active_station_past_year_data, columns = ['date', 'temp'])
-    tobs = {d:t for d,t in most_active_station_past_year_data}
     return tobs
 
 @app.route("/api/v1.0/<start>")
